@@ -1,5 +1,6 @@
 package pl.coderslab.daoClasses;
 
+import org.mindrot.jbcrypt.BCrypt;
 import pl.coderslab.DbUtils;
 import pl.coderslab.entity.User;
 
@@ -18,20 +19,44 @@ public class UserDao {
     private static final String DELETE_USER_QUERY =
             "DELETE FROM users WHERE id = ?";
 
-    public void create(User user) {
+    public User create(User user) {
         try (Connection conn = DbUtils.connect()) {
             PreparedStatement statement = conn.prepareStatement(CREATE_USER_QUERY, PreparedStatement.RETURN_GENERATED_KEYS);
             statement.setString(1, user.getUsername());
             statement.setString(2, user.getEmail());
-            statement.setString(3, user.getPassword());
+            statement.setString(3, hashPassword(user.getPassword()));
             statement.execute();
             ResultSet rs = statement.getGeneratedKeys();
             if (rs.next()) {
-                int id = rs.getInt(1);
+                user.setId(rs.getInt(1));
+            }
+            return user;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static String hashPassword(String password) {
+        return BCrypt.hashpw(password, BCrypt.gensalt());
+    }
+
+    public User read(int id) {
+        try (Connection conn = DbUtils.connect()) {
+            PreparedStatement statement = conn.prepareStatement(READ_USER_QUERY);
+            statement.setInt(1, id);
+            ResultSet rs = statement.executeQuery();
+            if (rs.next()) {
+                User user = new User();
                 user.setId(id);
+                user.setUsername(rs.getString(3));
+                user.setEmail(rs.getString(2));
+                user.setPassword(hashPassword(rs.getString(4)));
+                return user;
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return null;
     }
 }
