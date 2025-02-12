@@ -1,9 +1,11 @@
-package pl.coderslab.entity;
+package pl.coderslab.daoClasses;
 
 import pl.coderslab.DbUtils;
+import pl.coderslab.entity.User;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class UserDao {
@@ -18,13 +20,15 @@ public class UserDao {
 
     public void create(User user) {
         try (Connection conn = DbUtils.connect()) {
-            try (PreparedStatement statement = conn.prepareStatement(CREATE_USER_QUERY, PreparedStatement.RETURN_GENERATED_KEYS)) {
-                statement.setString(1, user.getUsername());
-                statement.setString(2, user.getEmail());
-                statement.setString(3, user.getPassword());
-                statement.executeUpdate();
-            } catch (SQLException e) {
-                e.printStackTrace();
+            PreparedStatement statement = conn.prepareStatement(CREATE_USER_QUERY, PreparedStatement.RETURN_GENERATED_KEYS);
+            statement.setString(1, user.getUsername());
+            statement.setString(2, user.getEmail());
+            statement.setString(3, user.getPassword());
+            statement.execute();
+            ResultSet rs = statement.getGeneratedKeys();
+            if (rs.next()) {
+                int id = rs.getInt(1);
+                user.setId(id);
             }
         } catch (SQLException e) {
             e.printStackTrace();
